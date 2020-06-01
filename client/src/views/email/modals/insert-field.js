@@ -74,22 +74,22 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
 
             var fetchedData = this.fetchedData;
 
-            if (fetchedData.to) {
-                data.to = {
-                    entityType: fetchedData.to.entityType,
-                    dataList: this.prepareDisplayValueList(fetchedData.to.entityType, fetchedData.to.values),
+            if (fetchedData.parent) {
+                data.parent = {
+                    entityType: fetchedData.parent.entityType,
+                    dataList: this.prepareDisplayValueList(fetchedData.parent.entityType, fetchedData.parent.values),
                 };
             }
 
-            if (fetchedData.parent) {
+            if (fetchedData.to) {
 
                 if (
                     fetchedData.parent.entityType !== fetchedData.to.entityType ||
                     fetchedData.parent.id !== fetchedData.to.id
                 ) {
-                    data.parent = {
-                        entityType: fetchedData.parent.entityType,
-                        dataList: this.prepareDisplayValueList(fetchedData.parent.entityType, fetchedData.parent.values),
+                    data.to = {
+                        entityType: fetchedData.to.entityType,
+                        dataList: this.prepareDisplayValueList(fetchedData.to.entityType, fetchedData.to.values),
                     };
                 }
             }
@@ -112,6 +112,9 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
             attributeList = attributeList.sort(function (v1, v2) {
                 return labels[v1].localeCompare(labels[v2]);
             }.bind(this));
+
+            // ignore ids
+            // ignore text fields ? keep address street
 
             attributeList.forEach(function (item) {
                 if (item === 'id') return;

@@ -1009,19 +1009,7 @@ class Email extends Record
 
         $result = (object) [];
 
-        if ($to) {
-            $e = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($to);
-            if ($e && $this->getAcl()->check($e)) {
-                foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
-                    $e->clear($item);
-                }
-                $result->to = (object) [
-                    'entityType' => $e->getEntityType(),
-                    'id' => $e->id,
-                    'values' => $e->getValueMap(),
-                ];
-            }
-        }
+        $emailTemplateService = $this->getServiceFactory()->create('EmailTemplate');
 
         if ($parentId && $parentType) {
             $e = $this->getEntityManager()->getEntity($parentType, $parentId);
@@ -1029,10 +1017,34 @@ class Email extends Record
                 foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
                     $e->clear($item);
                 }
+
+                $values = (object) [];
+                foreach ($e->getAttributeList() as $a) {
+                    $values->$a = $emailTemplateService->formatAttributeValue($e, $a);
+                }
                 $result->parent = (object) [
                     'entityType' => $e->getEntityType(),
                     'id' => $e->id,
-                    'values' => $e->getValueMap(),
+                    'values' => $values,
+                ];
+            }
+        }
+
+        if ($to) {
+            $e = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($to);
+            if ($e && $this->getAcl()->check($e)) {
+                foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
+                    $e->clear($item);
+                }
+
+                $values = (object) [];
+                foreach ($e->getAttributeList() as $a) {
+                    $values->$a = $emailTemplateService->formatAttributeValue($e, $a);
+                }
+                $result->to = (object) [
+                    'entityType' => $e->getEntityType(),
+                    'id' => $e->id,
+                    'values' => $values,
                 ];
             }
         }

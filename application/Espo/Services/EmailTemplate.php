@@ -221,52 +221,11 @@ class EmailTemplate extends Record
             if (in_array($attribute, $forbiddenAttributeList)) continue;
 
             $value = $entity->get($attribute);
-            if (is_object($value)) {
-                continue;
-            }
+            if (is_object($value)) continue;
 
-            $fieldType = $this->getMetadata()->get(['entityDefs', $entity->getEntityType(), 'fields', $attribute, 'type']);
+            if (!$entity->getAttributeType($attribute)) continue;
 
-            if ($fieldType === 'enum') {
-                $value = $this->getLanguage()->translateOption($value, $attribute, $entity->getEntityType());
-            } else if ($fieldType === 'array' || $fieldType === 'multiEnum') {
-                $valueList = [];
-                if (is_array($value)) {
-                    foreach ($value as $v) {
-                        $valueList[] = $this->getLanguage()->translateOption($v, $attribute, $entity->getEntityType());
-                    }
-                }
-                $value = implode(', ', $valueList);
-                $value = $this->getLanguage()->translateOption($value, $attribute, $entity->getEntityType());
-            } else {
-                $attributeType = $entity->getAttributeType($attribute);
-                if (!$attributeType) continue;
-
-                if ($attributeType == 'date') {
-                    if ($value)
-                        $value = $this->getDateTime()->convertSystemDate($value);
-                } else if ($attributeType == 'datetime') {
-                    if ($value)
-                        $value = $this->getDateTime()->convertSystemDateTime($value);
-                } else if ($attributeType == 'text') {
-                    if (!is_string($value)) {
-                        $value = '';
-                    }
-                    $value = nl2br($value);
-                } else if ($attributeType == 'float') {
-                    if (is_float($value)) {
-                        $decimalPlaces = 2;
-                        if ($fieldType === 'currency') {
-                            $decimalPlaces = $this->getConfig()->get('currencyDecimalPlaces');
-                        }
-                        $value = $this->getNumber()->format($value, $decimalPlaces);
-                    }
-                } else if ($attributeType == 'int') {
-                    if (is_int($value)) {
-                        $value = $this->getNumber()->format($value);
-                    }
-                }
-            }
+            $value = $this->formatAttributeValue($entity, $attribute);
 
             if (is_string($value) || $value === null || is_scalar($value) || is_callable([$value, '__toString'])) {
                 $variableName = $attribute;
@@ -311,5 +270,57 @@ class EmailTemplate extends Record
         }
 
         return $text;
+    }
+
+
+    public function formatAttributeValue(Entity $entity, string $attribute)
+    {
+        $value = $entity->get($attribute);
+
+        $fieldType = $this->getMetadata()->get(['entityDefs', $entity->getEntityType(), 'fields', $attribute, 'type']);
+
+        $attributeType = $entity->getAttributeType($attribute);
+
+        if ($fieldType === 'enum') {
+            $value = $this->getLanguage()->translateOption($value, $attribute, $entity->getEntityType());
+        } else if ($fieldType === 'array' || $fieldType === 'multiEnum' || $fieldType === 'checklist') {
+            $valueList = [];
+            if (is_array($value)) {
+                foreach ($value as $v) {
+                    $valueList[] = $this->getLanguage()->translateOption($v, $attribute, $entity->getEntityType());
+                }
+            }
+            $value = implode(', ', $valueList);
+            $value = $this->getLanguage()->translateOption($value, $attribute, $entity->getEntityType());
+        } else {
+            if ($attributeType == 'date') {
+                if ($value) {
+                    $value = $this->getDateTime()->convertSystemDate($value);
+                }
+            } else if ($attributeType == 'datetime') {
+                if ($value) {
+                    $value = $this->getDateTime()->convertSystemDateTime($value);
+                }
+            } else if ($attributeType == 'text') {
+                if (!is_string($value)) {
+                    $value = '';
+                }
+                $value = nl2br($value);
+            } else if ($attributeType == 'float') {
+                if (is_float($value)) {
+                    $decimalPlaces = 2;
+                    if ($fieldType === 'currency') {
+                        $decimalPlaces = $this->getConfig()->get('currencyDecimalPlaces');
+                    }
+                    $value = $this->getNumber()->format($value, $decimalPlaces);
+                }
+            } else if ($attributeType == 'int') {
+                if (is_int($value)) {
+                    $value = $this->getNumber()->format($value);
+                }
+            }
+        }
+
+        return $value;
     }
 }
