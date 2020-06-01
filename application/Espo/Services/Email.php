@@ -1000,4 +1000,43 @@ class Email extends Record
     {
         return true;
     }
+
+    public function getInsertFieldData(array $params)
+    {
+        $to = $params['to'] ?? null;
+        $parentId = $params['parentId'] ?? null;
+        $parentType = $params['parentType'] ?? null;
+
+        $result = (object) [];
+
+        if ($to) {
+            $e = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($to);
+            if ($e && $this->getAcl()->check($e)) {
+                foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
+                    $e->clear($item);
+                }
+                $result->to = (object) [
+                    'entityType' => $e->getEntityType(),
+                    'id' => $e->id,
+                    'values' => $e->getValueMap(),
+                ];
+            }
+        }
+
+        if ($parentId && $parentType) {
+            $e = $this->getEntityManager()->getEntity($parentType, $parentId);
+            if ($e && $this->getAcl()->check($e)) {
+                foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
+                    $e->clear($item);
+                }
+                $result->parent = (object) [
+                    'entityType' => $e->getEntityType(),
+                    'id' => $e->id,
+                    'values' => $e->getValueMap(),
+                ];
+            }
+        }
+
+        return $result;
+    }
 }
