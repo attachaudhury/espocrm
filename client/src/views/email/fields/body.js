@@ -97,7 +97,13 @@ define('views/email/fields/body', 'views/fields/wysiwyg', function (Dep) {
 
                 this.listenToOnce(view, 'insert', function (string) {
                     if (this.$summernote) {
-                        this.$summernote.summernote('pasteHTML', string);
+                        if (~string.indexOf('\n')) {
+                            string = string.replace(/(?:\r\n|\r|\n)/g, '<br>');
+                            var html = '<p>' + string + '</p>';
+                            this.$summernote.summernote('editor.pasteHTML', html);
+                        } else {
+                            this.$summernote.summernote('editor.insertText', string);
+                        }
                     }
                     this.clearView('insertFieldDialog');
                 }, this);

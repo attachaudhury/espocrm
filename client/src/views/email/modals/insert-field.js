@@ -145,6 +145,9 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                 if (type === 'linkMultiple') {
                     ignoreAttributeList.push(field + 'Ids');
                 }
+                if (type === 'wysiwyg') {
+                    ignoreAttributeList.push(field);
+                }
             }, this);
 
             attributeList.forEach(function (item) {
@@ -162,6 +165,8 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                 value = this.getHelper().sanitizeHtml(value);
 
                 var valuePreview = value.replace(/<br( \/)?>/gm, ' ');
+
+                value = value.replace(/<br( \/)?>/gm, '\n');
 
                 list.push({
                     name: item,
