@@ -227,13 +227,14 @@ class EmailTemplate extends Record
 
             $value = $this->formatAttributeValue($entity, $attribute);
 
-            if (is_string($value) || $value === null || is_scalar($value) || is_callable([$value, '__toString'])) {
-                $variableName = $attribute;
-                if (!is_null($prefixLink)) {
-                    $variableName = $prefixLink . '.' . $attribute;
-                }
-                $text = str_replace('{' . $type . '.' . $variableName . '}', $value, $text);
+            if (is_null($value)) continue;
+
+            $variableName = $attribute;
+            if (!is_null($prefixLink)) {
+                $variableName = $prefixLink . '.' . $attribute;
             }
+
+            $text = str_replace('{' . $type . '.' . $variableName . '}', $value, $text);
         }
 
         if (!$skipLinks) {
@@ -272,8 +273,7 @@ class EmailTemplate extends Record
         return $text;
     }
 
-
-    public function formatAttributeValue(Entity $entity, string $attribute)
+    public function formatAttributeValue(Entity $entity, string $attribute) : ?string
     {
         $value = $entity->get($attribute);
 
@@ -320,6 +320,14 @@ class EmailTemplate extends Record
                 }
             }
         }
+
+        if (!is_string($value) && is_scalar($value) || is_callable([$value, '__toString'])) {
+            $value = strval($value);
+        } else if ($value === null) {
+            $value = '';
+        }
+
+        if (!is_string($value)) return null;
 
         return $value;
     }

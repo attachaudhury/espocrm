@@ -1011,21 +1011,14 @@ class Email extends Record
 
         $emailTemplateService = $this->getServiceFactory()->create('EmailTemplate');
 
+        $dataList = [];
+
         if ($parentId && $parentType) {
             $e = $this->getEntityManager()->getEntity($parentType, $parentId);
             if ($e && $this->getAcl()->check($e)) {
-                foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
-                    $e->clear($item);
-                }
-
-                $values = (object) [];
-                foreach ($e->getAttributeList() as $a) {
-                    $values->$a = $emailTemplateService->formatAttributeValue($e, $a);
-                }
-                $result->parent = (object) [
-                    'entityType' => $e->getEntityType(),
-                    'id' => $e->id,
-                    'values' => $values,
+                $dataList[] = [
+                    'type' => 'parent',
+                    'entity' => $e,
                 ];
             }
         }
@@ -1033,20 +1026,34 @@ class Email extends Record
         if ($to) {
             $e = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($to);
             if ($e && $this->getAcl()->check($e)) {
-                foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
-                    $e->clear($item);
-                }
-
-                $values = (object) [];
-                foreach ($e->getAttributeList() as $a) {
-                    $values->$a = $emailTemplateService->formatAttributeValue($e, $a);
-                }
-                $result->to = (object) [
-                    'entityType' => $e->getEntityType(),
-                    'id' => $e->id,
-                    'values' => $values,
+                $dataList[] = [
+                    'type' => 'to',
+                    'entity' => $e,
                 ];
             }
+        }
+
+        foreach ($dataList as $item) {
+            $type = $item['type'];
+            $e = $item['entity'];
+
+            foreach ($this->getAcl()->getScopeForbiddenAttributeList($e->getEntityType()) as $item) {
+                $e->clear($item);
+            }
+
+            $values = (object) [];
+            foreach ($e->getAttributeList() as $a) {
+                $value = $emailTemplateService->formatAttributeValue($e, $a);
+                //$value = str_ireplace(['<br />', '<br>', '<br/>'], "\r\n", $value);
+                $values->$a = $value;
+            }
+
+            $result->$type = (object) [
+                'entityType' => $e->getEntityType(),
+                'id' => $e->id,
+                'values' => $values,
+                'name' => $e->get('name'),
+            ];
         }
 
         return $result;

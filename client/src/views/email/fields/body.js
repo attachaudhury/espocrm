@@ -97,7 +97,7 @@ define('views/email/fields/body', 'views/fields/wysiwyg', function (Dep) {
 
                 this.listenToOnce(view, 'insert', function (string) {
                     if (this.$summernote) {
-                        this.$summernote.summernote('editor.insertText', string);
+                        this.$summernote.summernote('pasteHTML', string);
                     }
                     this.clearView('dialog');
                 }, this);

@@ -33,23 +33,36 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
         backdrop: true,
 
         templateContent: `
+            {{#each viewObject.dataList}}
+                <h5>{{label}}</h5>
+                <ul class="list-group no-side-margin">
+                    {{#each dataList}}
+                    <li class="list-group-item clearfix">
+                        <a href="javascript:"
+                            data-action="insert" class="text-bold" data-name="{{name}}" data-type="{{../type}}">
+                            {{label}}
+                        </a>
 
+                        <div class="pull-right small"
+                            style="width: 50%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                            {{valuePreview}}
+                        </div>
+                    </li>
+                    {{/each}}
+                </ul>
+            {{/each}}
         `,
 
         events: {
             'click [data-action="insert"]': function (e) {
-                var value = $(e.currentTarget).data('value');
-                this.trigger(value);
+                var name = $(e.currentTarget).data('name');
+                var type = $(e.currentTarget).data('type');
+                this.insert(type, name);
             },
         },
 
         setup: function () {
             Dep.prototype.setup.call(this);
-
-            this.buttonList.push({
-                'name': 'cancel',
-                'label': 'Cancel'
-            });
 
             this.headerHtml = this.translate('Insert Field', 'labels', 'Email');
 
@@ -70,33 +83,34 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
         },
 
         prepareData: function () {
-            var data = {};
-
+            this.dataList = [];
             var fetchedData = this.fetchedData;
+            var typeList = ['parent', 'to'];
 
-            if (fetchedData.parent) {
-                data.parent = {
-                    entityType: fetchedData.parent.entityType,
-                    dataList: this.prepareDisplayValueList(fetchedData.parent.entityType, fetchedData.parent.values),
-                };
-            }
+            typeList.forEach(function (type) {
+                if (!fetchedData[type]) return;
 
-            if (fetchedData.to) {
+                var entityType = fetchedData[type].entityType;
+                var id = fetchedData[type].id;
 
-                if (
-                    fetchedData.parent.entityType !== fetchedData.to.entityType ||
-                    fetchedData.parent.id !== fetchedData.to.id
-                ) {
-                    data.to = {
-                        entityType: fetchedData.to.entityType,
-                        dataList: this.prepareDisplayValueList(fetchedData.to.entityType, fetchedData.to.values),
-                    };
+                for (var it of this.dataList) {
+                    if (it.id === id && it.entityType === entityType) {
+                        return;
+                    }
                 }
-            }
 
-            this.displayData = data;
+                var dataList = this.prepareDisplayValueList(fetchedData.parent.entityType, fetchedData.parent.values);
+                if (!dataList.length) return;
 
-            console.log(data);
+                this.dataList.push({
+                    type: type,
+                    entityType: entityType,
+                    id: id,
+                    name: fetchedData[type].name,
+                    dataList: dataList,
+                    label: this.translate(type, 'fields', 'Email'),
+                });
+            }, this);
         },
 
         prepareDisplayValueList: function (scope, values) {
@@ -113,11 +127,26 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                 return labels[v1].localeCompare(labels[v2]);
             }.bind(this));
 
-            // ignore ids
-            // ignore text fields ? keep address street
+            var ignoreAttributeList = ['id', 'modifiedAt', 'modifiedByName'];
+
+            var fm = this.getFieldManager();
+
+            fm.getEntityTypeFieldList(scope).forEach(function (field) {
+                var type = this.getMetadata().get(['entityDefs', scope, 'fields', field, 'type']);
+
+                if (~['link', 'linkOne', 'image', 'filed', 'linkParent'].indexOf(type)) {
+                    ignoreAttributeList.push(field + 'Id');
+                }
+                if (type === 'linkParent') {
+                    ignoreAttributeList.push(field + 'Type');
+                }
+                if (type === 'linkMultiple') {
+                    ignoreAttributeList.push(field + 'Ids');
+                }
+            }, this);
 
             attributeList.forEach(function (item) {
-                if (item === 'id') return;
+                if (~ignoreAttributeList.indexOf(item)) return;
                 var value = values[item];
                 if (value === null || value === '') return;
                 if (typeof value == 'boolean') return;
@@ -128,14 +157,32 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                     value = value.split(', ');
                 };
 
+                value = this.getHelper().sanitizeHtml(value);
+
+                var valuePreview = value.replace(/<br( \/)?>/gm, ' ');
+
                 list.push({
                     name: item,
                     label: labels[item],
                     value: value,
+                    valuePreview: valuePreview,
                 });
             }, this);
 
             return list;
+        },
+
+        insert: function (type, name) {
+            for (var g of this.dataList) {
+                if (g.type !== type) continue;
+
+                for (var i of g.dataList) {
+                    if (i.name !== name) continue;
+                    this.trigger('insert', i.value);
+                    break;
+                }
+                break;
+            }
         },
 
     });
