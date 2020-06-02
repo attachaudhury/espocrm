@@ -86,7 +86,9 @@ class EmailTemplate extends Record
                 'lower' => $params['emailAddress']
             ])->findOne();
 
-            $entity = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($params['emailAddress']);
+            $entity = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($params['emailAddress'],
+                null, ['Contact', 'Lead', 'Account', 'User']
+            );
 
             if ($entity) {
                 if ($entity instanceof Person) {
@@ -356,8 +358,10 @@ class EmailTemplate extends Record
         }
 
         if ($to) {
-            $e = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($to);
-            if ($e && $this->getAcl()->check($e)) {
+            $e = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($to, null,
+                ['Contact', 'Lead', 'Account']
+            );
+            if ($e && $e->getEntityType() !== 'User' && $this->getAcl()->check($e)) {
                 $dataList[] = [
                     'type' => 'to',
                     'entity' => $e,
@@ -398,6 +402,7 @@ class EmailTemplate extends Record
 
             $values = (object) [];
             foreach ($attributeList as $a) {
+                if (!$e->has($a)) continue;
                 $value = $emailTemplateService->formatAttributeValue($e, $a);
                 if ($value != '') {
                     $values->$a = $value;

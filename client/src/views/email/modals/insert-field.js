@@ -53,6 +53,10 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                     {{/each}}
                 </ul>
             {{/each}}
+
+            {{#unless viewObject.dataList.length}}
+                {{translate 'No Data'}}
+            {{/unless}}
         `,
 
         events: {
