@@ -185,6 +185,8 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                 }
                 break;
             }
+
+            this.close();
         },
 
     });

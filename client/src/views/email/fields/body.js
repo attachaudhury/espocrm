@@ -88,7 +88,7 @@ define('views/email/fields/body', 'views/fields/wysiwyg', function (Dep) {
             var parentId = this.model.get('parentId');
             var parentType = this.model.get('parentType');
 
-            this.createView('dialog', 'views/email/modals/insert-field', {
+            this.createView('insertFieldDialog', 'views/email/modals/insert-field', {
                 parentId: parentId,
                 parentType: parentType,
                 to: to,
@@ -99,7 +99,7 @@ define('views/email/fields/body', 'views/fields/wysiwyg', function (Dep) {
                     if (this.$summernote) {
                         this.$summernote.summernote('pasteHTML', string);
                     }
-                    this.clearView('dialog');
+                    this.clearView('insertFieldDialog');
                 }, this);
             });
         },
