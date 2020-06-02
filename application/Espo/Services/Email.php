@@ -1043,9 +1043,7 @@ class Email extends Record
 
             $values = (object) [];
             foreach ($e->getAttributeList() as $a) {
-                $value = $emailTemplateService->formatAttributeValue($e, $a);
-                //$value = str_ireplace(['<br />', '<br>', '<br/>'], "\r\n", $value);
-                $values->$a = $value;
+                $values->$a = $emailTemplateService->formatAttributeValue($e, $a);
             }
 
             $result->$type = (object) [

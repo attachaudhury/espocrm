@@ -101,7 +101,7 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                     }
                 }
 
-                var dataList = this.prepareDisplayValueList(fetchedData.parent.entityType, fetchedData.parent.values);
+                var dataList = this.prepareDisplayValueList(fetchedData[type].entityType, fetchedData[type].values);
                 if (!dataList.length) return;
 
                 this.dataList.push({
