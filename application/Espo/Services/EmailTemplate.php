@@ -46,6 +46,7 @@ class EmailTemplate extends Record
         $this->addDependency('language');
         $this->addDependency('number');
         $this->addDependency('htmlizerFactory');
+        $this->addDependency('fieldManagerUtil');
     }
 
     protected function getFileStorageManager()
@@ -330,5 +331,87 @@ class EmailTemplate extends Record
         if (!is_string($value)) return null;
 
         return $value;
+    }
+
+    public function getInsertFieldData(array $params)
+    {
+        $to = $params['to'] ?? null;
+        $parentId = $params['parentId'] ?? null;
+        $parentType = $params['parentType'] ?? null;
+
+        $result = (object) [];
+
+        $emailTemplateService = $this->getServiceFactory()->create('EmailTemplate');
+
+        $dataList = [];
+
+        if ($parentId && $parentType) {
+            $e = $this->getEntityManager()->getEntity($parentType, $parentId);
+            if ($e && $this->getAcl()->check($e)) {
+                $dataList[] = [
+                    'type' => 'parent',
+                    'entity' => $e,
+                ];
+            }
+        }
+
+        if ($to) {
+            $e = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($to);
+            if ($e && $this->getAcl()->check($e)) {
+                $dataList[] = [
+                    'type' => 'to',
+                    'entity' => $e,
+                ];
+            }
+        }
+
+        $fm = $this->getInjection('fieldManagerUtil');
+
+        foreach ($dataList as $item) {
+            $type = $item['type'];
+            $e = $item['entity'];
+
+            $entityType = $e->getEntityType();
+
+            $recordService = $this->getServiceFactory()->create($entityType);
+
+            $recordService->prepareEntityForOutput($e);
+
+            $ignoreTypeList = ['image', 'file', 'map', 'wysiwyg', 'linkMultiple', 'attachmentMultiple', 'bool'];
+
+            foreach ($fm->getEntityTypeFieldList($entityType) as $field) {
+                $fieldType = $fm->getEntityTypeFieldParam($entityType, $field, 'type');
+                $fieldAttributeList = $fm->getAttributeList($entityType, $field);
+                if (
+                    $fm->getEntityTypeFieldParam($entityType, $field, 'disabled') ||
+                    $fm->getEntityTypeFieldParam($entityType, $field, 'directAccessDisabled') ||
+                    $fm->getEntityTypeFieldParam($entityType, $field, 'templatePlaceholderDisabled') ||
+                    in_array($fieldType, $ignoreTypeList)
+                ) {
+                    foreach ($fieldAttributeList as $a) {
+                        $e->clear($a);
+                    }
+                }
+            }
+
+            $attributeList = $fm->getEntityTypeAttributeList($entityType);
+
+            $values = (object) [];
+            foreach ($attributeList as $a) {
+                $value = $emailTemplateService->formatAttributeValue($e, $a);
+                if ($value != '') {
+                    $values->$a = $value;
+                }
+            }
+
+            $result->$type = (object) [
+                'entityType' => $e->getEntityType(),
+                'id' => $e->id,
+                'values' => $values,
+                'name' => $e->get('name'),
+            ];
+        }
+
+        return $result;
     }
 }

@@ -235,7 +235,7 @@ class Email extends \Espo\Core\Controllers\Record
     {
         if (!$this->getAcl()->checkScope('Email', 'create')) throw new Forbidden();
 
-        return $this->getRecordService()->getInsertFieldData([
+        return $this->getServiceFactory()->create('EmailTemplate')->getInsertFieldData([
             'parentId' => $request->get('parentId'),
             'parentType' => $request->get('parentType'),
             'to' => $request->get('to'),

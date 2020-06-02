@@ -142,12 +142,6 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                 if (type === 'linkParent') {
                     ignoreAttributeList.push(field + 'Type');
                 }
-                if (type === 'linkMultiple') {
-                    ignoreAttributeList.push(field + 'Ids');
-                }
-                if (type === 'wysiwyg') {
-                    ignoreAttributeList.push(field);
-                }
             }, this);
 
             attributeList.forEach(function (item) {
