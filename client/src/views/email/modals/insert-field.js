@@ -34,7 +34,9 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
 
         templateContent: `
             {{#each viewObject.dataList}}
-                <h5>{{label}}</h5>
+                <div class="margin-bottom">
+                <h5>{{label}}: {{translate entityType category='scopeNames'}}</h5>
+                </div>
                 <ul class="list-group no-side-margin">
                     {{#each dataList}}
                     <li class="list-group-item clearfix">
@@ -43,7 +45,7 @@ define('views/email/modals/insert-field', ['views/modal', 'field-language'], fun
                             {{label}}
                         </a>
 
-                        <div class="pull-right small"
+                        <div class="pull-right"
                             style="width: 50%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                             {{valuePreview}}
                         </div>
